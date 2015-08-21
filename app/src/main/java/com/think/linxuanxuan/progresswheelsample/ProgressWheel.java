@@ -91,8 +91,10 @@ public class ProgressWheel extends View {
     private boolean isDrawFirst = false;
     private boolean isDrawSecond = false;
 
+    //提供给外部的回调，将当前的progress反馈
     private ProgressCallback callback;
 
+    //声明handler用来处理invalidate的消息
     private android.os.Handler handler;
 
     /**
@@ -104,8 +106,10 @@ public class ProgressWheel extends View {
     public ProgressWheel(Context context, AttributeSet attrs) {
         super(context, attrs);
 
+        //获取控件的参数
         parseAttributes(context.obtainStyledAttributes(attrs,
                 R.styleable.ProgressWheel));
+        //初始化handler来接受消息
         handler = new android.os.Handler() {
             @Override
             public void handleMessage(Message msg) {
@@ -130,6 +134,11 @@ public class ProgressWheel extends View {
     //Setting up stuff
     //----------------------------------
 
+    /**
+     * 测量控件的大小
+     * @param widthMeasureSpec
+     * @param heightMeasureSpec
+     */
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -176,12 +185,17 @@ public class ProgressWheel extends View {
      * Use onSizeChanged instead of onAttachedToWindow to get the dimensions of the view,
      * because this method is called after measuring the dimensions of MATCH_PARENT & WRAP_CONTENT.
      * Use this dimensions to setup the bounds and paints.
+     * 当空间的大小改变的时候调用该函数，前两个参数为新的宽度和高度，后面两个参数为旧的宽度和高度
+     * 这个函数在一开始就会被调用，传进来的oldw和oldh都为0
      */
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
+        //绘制圆圈的正方形
         setupBounds(w, h);
+        //设置画笔
         setupPaints();
+        //要求界面刷新
         invalidate();
     }
 
@@ -194,7 +208,7 @@ public class ProgressWheel extends View {
         barPaint.setAntiAlias(true);
         barPaint.setStyle(Paint.Style.STROKE);
         barPaint.setStrokeWidth(barWidth);
-//        barPaint.setStrokeJoin(Paint.Join.ROUND);
+        //设置直线的圆角，因为画勾的画笔和圆圈的画笔是同一个，为了让勾的两条直线的焦点处更平滑，为其设置圆角
         barPaint.setStrokeCap(Paint.Cap.ROUND);
 
         rimPaint.setColor(rimColor);
@@ -205,6 +219,7 @@ public class ProgressWheel extends View {
 
     /**
      * Set the bounds of the component
+     * 设置边框，就是绘制圆圈的正方形，紧贴圆形
      */
     private void setupBounds(int layout_width, int layout_height) {
         int paddingTop = getPaddingTop();
@@ -237,7 +252,7 @@ public class ProgressWheel extends View {
 
     /**
      * Parse the attributes passed to the view from the XML
-     *
+     * 读取xml中的布局属性来初始化参数
      * @param a the attributes to parse
      */
     private void parseAttributes(TypedArray a) {
@@ -283,6 +298,7 @@ public class ProgressWheel extends View {
         a.recycle();
     }
 
+    //设置回调函数
     public void setCallback(ProgressCallback progressCallback) {
         callback = progressCallback;
 
@@ -295,7 +311,10 @@ public class ProgressWheel extends View {
     //Animation stuff
     //----------------------------------
 
-
+    /**
+     * 真正绘制view的函数，当调用invalidate函数之后，就会调用该函数去绘制
+     * @param canvas
+     */
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
@@ -442,7 +461,7 @@ public class ProgressWheel extends View {
 
     /**
      * My implementation
-     * 开始画勾，这个时候要停止圆圈的转动
+     * 提供给外界的接口，开始画勾，这个时候要停止圆圈的转动，直接绘制完整的圆圈
      */
     public void beginDrawTick() {
         isDrawFirst = true;
@@ -453,6 +472,7 @@ public class ProgressWheel extends View {
 
     /**
      * My implementation
+     * 提供给外界的接口
      */
     public void setLineSpeed(float speed) {
         if (speed < 0 || speed > 1) {
@@ -463,7 +483,6 @@ public class ProgressWheel extends View {
 
     /**
      * 当该控件重新变为可见的时候，需要重新开始旋转，所以要重新获取时间
-     *
      * @param changedView
      * @param visibility
      */
@@ -476,6 +495,12 @@ public class ProgressWheel extends View {
         }
     }
 
+    /**
+     * 这个函数是计算该次绘制圆圈的时候圆弧的长度，主要是得到barExtraLength的大小
+     * 最后将该值和barLength（bar长度的最小值）叠加起来
+     * 该函数是通过对时间的计算来得到值
+     * @param deltaTimeInMilliSeconds
+     */
     private void updateBarLength(long deltaTimeInMilliSeconds) {
         if (pausedTimeWithoutGrowing >= pauseGrowingTime) {
             timeStartGrowing += deltaTimeInMilliSeconds;
